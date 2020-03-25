@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sigsci.my-site-name-here
+stringData:
+  accesskeyid: xxxx
+  secretaccesskey: yyyy
+
+# SIGSCI_ACCESSKEYID=xxxx SIGSCI_SECRETACCESSKEY=yyyy ./sigsci-agent ^C
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: helloworld
+  labels:
+    app: helloworld
+spec:
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000
+  selector:
+    app: helloworld
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: helloworld
+  labels:
+    app: helloworld
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: helloworld
+  template:
+    metadata:
+      labels:
+        app: helloworld
+    spec:
+      containers:
+        # https://docs.signalsciences.net/install-guides/kubernetes/kubernetes-agent-module/
+      # Example helloworld app running on port 8000 against sigsci-agent via UDP /sigsci/tmp/sigsci.sock
+      - name: helloworld
+        image: signalsciences/example-helloworld:latest
+        imagePullPolicy: IfNotPresent
+        args:
+          # Address for the app to listen on
+          - localhost:8000
+          # Address sigsci-agent RPC is listening on
+          - /sigsci/tmp/sigsci.sock
+        ports:
+        - containerPort: 8000
+        volumeMounts:
+        # Shared mount with sigsci-agent container where the socket is shared via emptyDir volume
+        - name: sigsci-tmp
+          mountPath: /sigsci/tmp
+      # Signal Sciences Agent running in default RPC mode
+      - name: sigsci-agent
+        image: signalsciences/sigsci-agent:4.6.0
+        imagePullPolicy: Always
+        env:
+        - name: SIGSCI_DEBUG_LOG_ALL_THE_THINGS
+          value: "1"
+        - name: SIGSCI_ACCESSKEYID
+          valueFrom:
+            secretKeyRef:
+              # This secret needs added (see docs on sigsci secrets)
+              name: sigsci.my-site-name-here
+              key: accesskeyid
+        - name: SIGSCI_SECRETACCESSKEY
+          valueFrom:
+            secretKeyRef:
+              # This secret needs added (see docs on sigsci secrets)
+              name: sigsci.my-site-name-here
+              key: secretaccesskey
+        # If required (default is /sigsci/tmp/sigsci.sock for the container)
+        #- name: SIGSCI_RPC_ADDRESS
+        #  value: /path/to/socket for UDS OR host:port if TCP
+        securityContext:
+          # The sigsci-agent container should run with its root filesystem read only
+          readOnlyRootFilesystem: true
+        volumeMounts:
+        # Default volume mount location for sigsci-agent writeable data
+        # NOTE: Also change `SIGSCI_SHARED_CACHE_DIR` (default `/sigsci/tmp/cache`)
+        #       if mountPath is changed, but best not to change.
+        - name: sigsci-tmp
+          mountPath: /sigsci/tmp
+      volumes:
+      # Define a volume where sigsci-agent will write temp data and share the socket file,
+      # which is required with the root filesystem is mounted read only
+      - name: sigsci-tmp
+        emptyDir: {}

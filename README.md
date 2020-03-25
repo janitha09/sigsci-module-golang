@@ -1,3 +1,16 @@
+deployng to k8s running via docker for mac
+
+`docker build -t signalsciences/example-helloworld .`
+
+the kube yaml is in examples
+
+`kubectl -n sigsci apply -f examples/example-helloworld.yaml`
+
+verbose debugging is enabled
+
+make a few requests for things to appear in sigsci 200 is fine
+
+`kubectl -n sigsci port-forward helloworld-798df58cdf-ngpwd 8000:8000`
 
 [![grc][grc-img]][grc] [![GoDoc][doc-img]][doc]
 

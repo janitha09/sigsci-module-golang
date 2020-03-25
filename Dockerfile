@@ -1,9 +1,13 @@
-FROM golang:1.10.6-alpine3.8
+FROM golang:1.13
 
-COPY goroot/ /go/
-# this is used to lint and build tarball
-RUN gometalinter --install --debug
+# Image metadata
+LABEL com.signalsciences.sigsci-module-golang.examples="helloworld"
+LABEL maintainer="Signal Sciences <support@signalsciences.com>"
 
-# we will mount the current directory here
-VOLUME [ "/go/src/github.com/signalsciences/sigsci-module-golang" ]
-WORKDIR /go/src/github.com/signalsciences/sigsci-module-golang
+# Install sigsci golang module (with examples)
+RUN go get github.com/signalsciences/sigsci-module-golang
+
+# Use the helloworld example as the test app
+WORKDIR /go/src/github.com/signalsciences/sigsci-module-golang/examples
+
+ENTRYPOINT [ "go", "run", "./helloworld" ]
