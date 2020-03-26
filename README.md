@@ -1,16 +1,32 @@
 deployng to k8s running via docker for mac
 
-`docker build -t signalsciences/example-helloworld .`
+```sh
+docker build -t signalsciences/example-helloworld .
+```
 
 the kube yaml is in examples
 
-`kubectl -n sigsci apply -f examples/example-helloworld.yaml`
+```sh
+kubectl -n sigsci apply -f examples/example-helloworld.yaml
+```
+
 
 verbose debugging is enabled
 
 make a few requests for things to appear in sigsci 200 is fine
 
-`kubectl -n sigsci port-forward helloworld-798df58cdf-ngpwd 8000:8000`
+```sh
+kubectl -n sigsci port-forward helloworld-798df58cdf-ngpwd 8000:8000
+```
+
+running nikto on the host
+
+```sh
+docker run -it --network="host" --rm --entrypoint /bin/sh frapsoft/nikto
+ping host.docker.internal -c 1 # get the ip
+/usr/bin/nikto.pl -host http://192.168.65.2:8000 
+```
+https://github.com/docker/for-linux/issues/264
 
 [![grc][grc-img]][grc] [![GoDoc][doc-img]][doc]
 
